@@ -1,10 +1,22 @@
 {% extends "base.html" %}
+
 {% block content %}
 <h2>Course Catalog</h2>
+<a href="{{ url_for('add_course') }}">Add a New Course</a>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul>
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
 <ul>
     {% for course in courses %}
         <li><a href="{{ url_for('course_details', code=course['code']) }}">{{ course.name }}</a> - {{ course.code }}</li>
     {% endfor %}
 </ul>
 {% endblock %}
-

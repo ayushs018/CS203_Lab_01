@@ -20,5 +20,27 @@
         "prerequisites": "Basic Python, Linux",
         "grading": "50% Assignment, 50% Quiz",
         "description": ""
+    },
+    {
+        "code": "ES112",
+        "name": "Ayush",
+        "instructor": "AYush",
+        "semester": "AYush",
+        "schedule": "AYush",
+        "classroom": "AYush",
+        "prerequisites": "AYush",
+        "grading": "AYush",
+        "description": "AYush"
+    },
+    {
+        "code": "Ayush1",
+        "name": "Ayush1",
+        "instructor": "Ayush1",
+        "semester": "Ayush1",
+        "schedule": "Ayush1",
+        "classroom": "Ayush1",
+        "prerequisites": "Ayush1",
+        "grading": "Ayush1",
+        "description": "Ayush1"
     }
 ]
