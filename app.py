@@ -9,6 +9,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.trace import SpanKind
+import socket
 
 # Flask App Initialization
 app = Flask(__name__)
@@ -27,9 +28,13 @@ span_processor = BatchSpanProcessor(jaeger_exporter)
 trace.get_tracer_provider().add_span_processor(span_processor)
 FlaskInstrumentor().instrument_app(app)
 
-#  JSON Formatter for Structured Logging
+
+
+
+#custom json formatter 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
+        ip_address = getattr(record, 'ip', socket.gethostbyname(socket.gethostname()))        
         log_entry = {
             'timestamp': self.formatTime(record),
             'level': record.levelname,
@@ -37,168 +42,112 @@ class JsonFormatter(logging.Formatter):
             'logger': record.name,
             'filename': record.pathname,
             'line': record.lineno,
+            'ip_address': ip_address,  # Adding IP address
         }
-        return json.dumps(log_entry, indent=4)  #  indentation
+        return json.dumps(log_entry, indent=4)
 
 
-# Logging Setup
+
+
+# Logger Setup
 handler = logging.StreamHandler()
-handler.setFormatter(JsonFormatter())
-logger = logging.getLogger('JsonLogger')
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
+handler.setFormatter(JsonFormatter())  # Set the custom JSON formatter
+logger = logging.getLogger(__name__) 
+logger.setLevel(logging.INFO)  # Set the log level to INFO
+logger.addHandler(handler)  # adding handler
+
 
 
 
 # Utility Functions
 def load_courses():
-    """Load courses from the JSON file."""
-    if not os.path.exists(COURSE_FILE):
-        return []  # Return an empty list if the file doesn't exist
-    with open(COURSE_FILE, 'r') as file:
-        return json.load(file)
+    with tracer.start_as_current_span("load_courses", kind=SpanKind.INTERNAL) as span:
+        trace_id = f"{span.get_span_context().trace_id:032x}"
+        logger.info(f"Trace ID: {trace_id} - Loading courses")
+        if not os.path.exists(COURSE_FILE):
+            return []
+        with open(COURSE_FILE, 'r') as file:
+            return json.load(file)
 
 
 def save_courses(data):
-    """Save new course data to the JSON file."""
-    courses = load_courses()  # Load existing courses
-    courses.append(data)  # Append the new course
-    with open(COURSE_FILE, 'w') as file:
-        json.dump(courses, file, indent=4)
+    with tracer.start_as_current_span("save_courses", kind=SpanKind.INTERNAL) as span:
+        trace_id = f"{span.get_span_context().trace_id:032x}"
+        logger.info(f"Trace ID: {trace_id} - Saving course {data['code']}")
+        courses = load_courses()
+        courses.append(data)
+        with open(COURSE_FILE, 'w') as file:
+            json.dump(courses, file, indent=4)
 
 
 # Routes
 @app.route('/')
 def index():
-    # tracing 
-    with tracer.start_as_current_span("render_index_page") as span : 
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        span.set_attribute("user.ip", request.remote_addr)
-        # logging 
-        logger.info("Index page accesed" , extra={"route" : "/" , "method" : request.method})
-        return render_template('index.html')
+    return render_template('index.html')
 
 
 @app.route('/catalog')
 def course_catalog():
-    # tracing 
-    with tracer.start_as_current_span("render_course_catalog") as span:
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        span.set_attribute("user.ip", request.remote_addr)
-
+    #trace setup 
+    with tracer.start_as_current_span("render_course_catalog", kind=SpanKind.SERVER) as span:
         courses = load_courses()
-        # logging
-        logger.info("Course catalog viewed", extra={"route": "/catalog", "courses_count": len(courses)})
+        trace_id = f"{span.get_span_context().trace_id:032x}"
+        span.set_attribute("total_courses", len(courses))
+        span.set_attribute("user_ip", request.remote_addr)
+        logger.info(f"Trace ID: {trace_id} - Rendering course catalog with {len(courses)} courses")
         return render_template('course_catalog.html', courses=courses)
+
 
 @app.route('/add_course', methods=['GET', 'POST'])
 def add_course():
-    with tracer.start_as_current_span("add_course_page") as span:
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        span.set_attribute("user.ip", request.remote_addr)
-
+    with tracer.start_as_current_span("add_course", kind=SpanKind.SERVER) as span:
+        trace_id = f"{span.get_span_context().trace_id:032x}"
         if request.method == 'POST':
-            course_name = request.form['name']
-            instructor = request.form['instructor']
-            course_code = request.form['code']
-            semester = request.form['semester']
-            schedule = request.form['schedule']
-            classroom = request.form['classroom']
-            prerequisites = request.form['prerequisites']
-            grading = request.form['grading']
-            description = request.form['description']
-
-            # Validate and log missing required fields
-            missing_fields = []
-            if not course_name:
-                missing_fields.append("Course name")
-                logger.error("Course name is missing", extra={"route": "/add_course", "field": "name"})
-            if not instructor:
-                missing_fields.append("Instructor")
-                logger.error("Instructor is missing", extra={"route": "/add_course", "field": "instructor"})
-            if not course_code:
-                missing_fields.append("Course code")
-                logger.error("Course code is missing", extra={"route": "/add_course", "field": "code"})
-            if not semester:
-                missing_fields.append("Semester")
-                logger.error("Semester is missing", extra={"route": "/add_course", "field": "semester"})
-            if not schedule:
-                missing_fields.append("Schedule")
-                logger.error("Schedule is missing", extra={"route": "/add_course", "field": "schedule"})
-            if not classroom:
-                missing_fields.append("Classroom")
-                logger.error("Classroom is missing", extra={"route": "/add_course", "field": "classroom"})
-            if not prerequisites:
-                missing_fields.append("Prerequisites")
-                logger.error("Prerequisites are missing", extra={"route": "/add_course", "field": "prerequisites"})
-            if not grading:
-                missing_fields.append("Grading")
-                logger.error("Grading is missing", extra={"route": "/add_course", "field": "grading"})
-            if not description:
-                missing_fields.append("Description")
-                logger.error("Description is missing", extra={"route": "/add_course", "field": "description"})
-
-            # If there are missing fields, notify the user and prevent form submission
-            if missing_fields:
-                flash(f"Missing required fields: {', '.join(missing_fields)}", "error")
-                return redirect(url_for('add_course'))
-
-            # Save course if all fields are filled
+            errors = {}
             course = {
-                'code': course_code,
-                'name': course_name,
-                'instructor': instructor,
-                'semester': semester,
-                'schedule': schedule,
-                'classroom': classroom,
-                'prerequisites': prerequisites,
-                'grading': grading,
-                'description': description
+                'code': request.form.get('code'),
+                'name': request.form.get('name'),
+                'instructor': request.form.get('instructor'),
             }
+            if not course['code']:
+                errors['code'] = "Course code is required."  # checking all the fields are field 
+            if not course['name']:
+                errors['name'] = "Course name is required."  # checking all the fields are field 
+            if not course['instructor']:
+                errors['instructor'] = "Instructor name is required."  # checking all the fields are field 
 
-            save_courses(course)
-            # logging
-            logger.info(f"Course '{course['name']}' added successfully", extra={"route": "/add_course"})
+            if errors: # throw errors 
+                span.set_attribute("error", True)
+                span.set_attribute("validation_errors", errors)
+                logger.warning(f"Trace ID: {trace_id} - Validation errors: {errors}")
+                flash("Please fix the errors and try again.", "danger")
+                return render_template('add_course.html', errors=errors)
+
+            save_courses(course) #saving
+            span.set_attribute("course_code", course['code'])
+            logger.info(f"Trace ID: {trace_id} - Course '{course['code']}' added successfully")
             flash(f"Course '{course['name']}' added successfully!", "success")
-            return redirect(url_for('course_catalog'))
-        
-        return render_template('add_course.html')
+            return render_template('add_course.html', errors={})
+
+        logger.info(f"Trace ID: {trace_id} - Rendering add_course page")
+        return render_template('add_course.html', errors={})
 
 
 @app.route('/course/<code>')
 def course_details(code):
-    with tracer.start_as_current_span("view_course_details") as span:
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        span.set_attribute("user.ip", request.remote_addr)
-
+    with tracer.start_as_current_span("course_details", kind=SpanKind.SERVER) as span:
+        trace_id = f"{span.get_span_context().trace_id:032x}"
         courses = load_courses()
         course = next((course for course in courses if course['code'] == code), None)
-        
         if not course:
-            flash(f"No course found with code '{code}'.", "error")
+            span.set_attribute("error", True)
+            span.set_attribute("course_code", code)
+            logger.error(f"Trace ID: {trace_id} - No course found with code '{code}'")
+            flash(f"No course found with code '{code}'.", "danger")
             return redirect(url_for('course_catalog'))
-        logger.info(f"Course details viewed for code: {code}", extra={"route": f"/course/{code}"})
+        span.set_attribute("course_code", code)
+        logger.info(f"Trace ID: {trace_id} - Displaying details for course '{code}'")
         return render_template('course_details.html', course=course)
-
-
-@app.route("/manual-trace")
-def manual_trace():
-    # Start a span manually for custom tracing
-    with tracer.start_as_current_span("manual-span", kind=SpanKind.SERVER) as span:
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        span.add_event("Processing request")
-        return "Manual trace recorded!", 200
-
-
-@app.route("/auto-instrumented")
-def auto_instrumented():
-    # Automatically instrumented via FlaskInstrumentor
-    return "This route is auto-instrumented!", 200
 
 
 if __name__ == '__main__':

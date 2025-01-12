@@ -1,34 +1,92 @@
 <!DOCTYPE html>
-<html>
-    {% extends "base.html" %}
-    {% block content %}
+<html lang="en">
 <head>
-    <title>Add Course</title>
+    <meta charset="UTF-8">
+    <title>Add a New Course</title>
+    <!-- Add Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Add a New Course</h1>
-    <form method="post">
-        <label for="code">Course Code:</label><br>
-        <input type="text" id="code" name="code" required><br>
-        <label for="name">Course Name:</label><br>
-        <input type="text" id="name" name="name" required><br>
-        <label for="instructor">Instructor:</label><br>
-        <input type="text" id="instructor" name="instructor"><br>
-        <label for="semester">Semester:</label><br>
-        <input type="text" id="semester" name="semester"><br>
-        <label for="schedule">Schedule:</label><br>
-        <input type="text" id="schedule" name="schedule"><br>
-        <label for="classroom">Classroom:</label><br>
-        <input type="text" id="classroom" name="classroom"><br>
-        <label for="prerequisites">Prerequisites:</label><br>
-        <input type="text" id="prerequisites" name="prerequisites"><br>
-        <label for="grading">Grading:</label><br>
-        <input type="text" id="grading" name="grading"><br>
-        <label for="description">Description:</label><br>
-        <textarea id="description" name="description" rows="4"></textarea><br><br>
-        <input type="submit" value="Add Course">
-    </form>
-    <a href="{{ url_for('index') }}">Back to Home</a>
+    <div class="container mt-5">
+        <h1 class="mb-4">Add a New Course</h1>
+
+        <!-- Display messages as Bootstrap alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alert alert-success" role="alert">
+            {% for category, message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('add_course') }}">
+            <div class="mb-3">
+                <label for="code" class="form-label">Course Code (required):</label>
+                <input type="text" id="code" name="code" class="form-control" value="{{ request.form.get('code', '') }}">
+                {% if 'code' in errors %}
+                <div class="text-danger">{{ errors['code'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Course Name (required):</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ request.form.get('name', '') }}">
+                {% if 'name' in errors %}
+                <div class="text-danger">{{ errors['name'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="instructor" class="form-label">Instructor (required):</label>
+                <input type="text" id="instructor" name="instructor" class="form-control" value="{{ request.form.get('instructor', '') }}">
+                {% if 'instructor' in errors %}
+                <div class="text-danger">{{ errors['instructor'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="semester" class="form-label">Semester:</label>
+                <input type="text" id="semester" name="semester" class="form-control" value="{{ request.form.get('semester', '') }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="schedule" class="form-label">Schedule:</label>
+                <input type="text" id="schedule" name="schedule" class="form-control" value="{{ request.form.get('schedule', '') }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="classroom" class="form-label">Classroom:</label>
+                <input type="text" id="classroom" name="classroom" class="form-control" value="{{ request.form.get('classroom', '') }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="prerequisites" class="form-label">Prerequisites:</label>
+                <input type="text" id="prerequisites" name="prerequisites" class="form-control" value="{{ request.form.get('prerequisites', '') }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="grading" class="form-label">Grading:</label>
+                <input type="text" id="grading" name="grading" class="form-control" value="{{ request.form.get('grading', '') }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label>
+                <textarea id="description" name="description" class="form-control">{{ request.form.get('description', '') }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Course</button>
+        </form>
+
+        <!-- Buttons to navigate back to Home and Course Catalog -->
+        <div class="mt-3">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+            <a href="{{ url_for('course_catalog') }}" class="btn btn-secondary">Back to Course Catalog</a>
+        </div>
+    </div>
+
+    <!-- Add Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-{% endblock %}
 </html>

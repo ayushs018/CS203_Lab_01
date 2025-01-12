@@ -1,22 +1,51 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Course Catalog</title>
+    <!-- Add Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Course Catalog</h1>
+        
+        <!-- Button to Add a New Course -->
+        <a href="{{ url_for('add_course') }}" class="btn btn-primary mb-3">Add a New Course</a>
 
-{% block content %}
-<h2>Course Catalog</h2>
-<a href="{{ url_for('add_course') }}">Add a New Course</a>
+        <!-- Table displaying courses -->
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Instructor</th>
+                    <th>Semester</th>
+                    <th>Schedule</th>
+                    <th>Classroom</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>{{ course.code }}</td>
+                    <td>{{ course.name }}</td>
+                    <td>{{ course.instructor }}</td>
+                    <td>{{ course.semester }}</td>
+                    <td>{{ course.schedule }}</td>
+                    <td>{{ course.classroom }}</td>
+                    <td><a href="{{ url_for('course_details', code=course.code) }}" class="btn btn-info btn-sm">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Button to Go Back to Home -->
+        <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+    </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <ul>
-            {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-{% endwith %}
-
-<ul>
-    {% for course in courses %}
-        <li><a href="{{ url_for('course_details', code=course['code']) }}">{{ course.name }}</a> - {{ course.code }}</li>
-    {% endfor %}
-</ul>
-{% endblock %}
+    <!-- Add Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

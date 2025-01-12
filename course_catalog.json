@@ -42,5 +42,10 @@
         "prerequisites": "Ayush1",
         "grading": "Ayush1",
         "description": "Ayush1"
+    },
+    {
+        "code": "cs1",
+        "name": "cs1",
+        "instructor": "cs1"
     }
 ]
