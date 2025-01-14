@@ -1,20 +1,19 @@
-# Importing required libraries
-import json  # For handling JSON data
-import os  # For interacting with the operating system
-import logging  # For logging events and messages
-from flask import Flask, render_template, request, redirect, url_for, flash  # Flask modules for web app functionality
-from opentelemetry import trace  # For tracing capabilities
-from opentelemetry.sdk.resources import Resource  # To define service resources
+
+import json  
+import os 
+import logging  
+from flask import Flask, render_template, request, redirect, url_for, flash  
+from opentelemetry import trace  
+from opentelemetry.sdk.resources import Resource  
 from opentelemetry.sdk.trace import TracerProvider  # To provide tracing capabilities
 from opentelemetry.sdk.trace.export import BatchSpanProcessor  # To process and export spans in batches
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter  # Jaeger exporter for trace visualization
-from opentelemetry.instrumentation.flask import FlaskInstrumentor  # To integrate OpenTelemetry with Flask
-from opentelemetry.trace import SpanKind  # Enum for different span kinds
-import socket  # For working with IP addresses
-
+from opentelemetry.instrumentation.flask import FlaskInstrumentor  # Implementing OpenTelemetry with Flask
+from opentelemetry.trace import SpanKind 
+import socket # For working with IP addresses
 # Flask App Initialization
-app = Flask(__name__)  # Initialize Flask app
-app.secret_key = 'secret'  # Set a secret key for session management
+app = Flask(__name__) 
+app.secret_key = 'secret' 
 COURSE_FILE = 'course_catalog.json'  # File to store course data
 
 # OpenTelemetry Setup
@@ -25,8 +24,8 @@ jaeger_exporter = JaegerExporter(  # Configure Jaeger exporter
     agent_host_name="localhost",
     agent_port=6831,
 )
-span_processor = BatchSpanProcessor(jaeger_exporter)  # Configure span processor
-trace.get_tracer_provider().add_span_processor(span_processor)  # Add processor to tracer provider
+span_processor = BatchSpanProcessor(jaeger_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor) 
 FlaskInstrumentor().instrument_app(app)  # Instrument Flask app for tracing
 
 
